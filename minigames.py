@@ -6,7 +6,7 @@ def print_delay(text, delay=1):
     print(text)
     time.sleep(delay)
 
-def pharaoh_battle():
+def pharaoh_battle(player):
     player_health = 200
     pharaoh_health = 500
     pharoah_medallion = ""
@@ -97,8 +97,8 @@ def pharaoh_battle():
             print_delay("You feel a strange energy surround you...")
             print_delay("You have inherited the PHARAOH'S lifestyle: opulence, power, and respect.")
             print_delay("Your stats increase drastically. You are now a living legend.")
-            print("** RICHNESS OPULENCE ENDING UNLOCKED **")
             #**PHAROAH_MEDALLION ADDED INTO INVENTORY 
+
         else:
             print_delay("Though the PHARAOH is defeated, his curse fades into the wind...")
             print("You walk away victorious, but the sands keep their secrets.")
@@ -279,7 +279,6 @@ def health_check(player):
             player.restore_health()
         else:
             print_delay("You failed to regenerate. Game Over.")
-            ask_retry()
             return False
     return True
 
@@ -318,7 +317,7 @@ def battle_minigame(player):
     player_health = 100
     wailord_health = 300
     special_moves = []
-
+    pokemon_boost = True if random.randint(1,100) <= 20 else False
     print_delay("Wailord appears! You must beat him in 3 moves or perish.")
 
     print_delay("\nYou find two items beneath the cargo ship:")
@@ -373,13 +372,12 @@ def battle_minigame(player):
 
     if player_health <= 0:
         print_delay("\nYou have died. Wailord wins!\n--- Game Over ---")
-        ask_retry()
         return modules.change_state.CHECKPOINT
 
     if wailord_health <= 0:
         print_delay("\nYou defeated Wailord!")
-        if any(move >= 100 for move in special_moves):
-            print_delay("You achieved the SPECIAL POKEMON ENDING!")
+        if pokemon_boost:
+            print_delay("Wailord drops something!")
             print_delay("You get 1 passport of any citizenship")
             player.inventory.items.append(modules.InventoryItem("passport", "A universal passport that modifies for the user to enter any country.", 1))
         else:

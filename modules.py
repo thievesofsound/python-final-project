@@ -55,6 +55,8 @@ class Checkpoint:
         self.name = name
         self.description = description
         self.minigame = minigame
+    def exit_game(self):
+        sys.exit()
 
 
 class Start:
@@ -180,15 +182,20 @@ class Inventory:
 
 def quit_loop():
     while True:
-        char = getch.getch()  # User input, but not displayed on the screen
-        if char == "q":
-            return True
+        #check if key has been pressed
+        if getch.kbhit():
+            #find out what key it is and store it to key
+            key = getch.getch().decode('ASCII')
+            #if the key is q, then break
+            if key == "q":
+                return True
 
-def import_game_state():
+
+def import_game_state(games):
     try:
         with open("direct.p", "rb") as f:
             player = dill.load(f)
     except FileNotFoundError:
         player = modules.Player("name")
-    
+        player.play(games)
     return player

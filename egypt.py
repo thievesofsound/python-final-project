@@ -122,6 +122,7 @@ games = modules.Story(
 def exitGame(player):
     def func():
         dill.dump(player, open("egypt.p", "wb"))
+        dill.dump(player.inventory, open("inventory.p", 'wb'))
         print("Files have been saved, press q to fully exit.")
         while True:
             if modules.quit_loop() == True:
@@ -130,47 +131,69 @@ def exitGame(player):
     return func
 
 
-player = modules.Player("pranav")
-player.play(games)
+player = modules.import_game_state(games)
 
 atexit.register(exitGame(player))
 
 while True:
     match player.state:
         case modules.ListOfOptions():
-            prompt = OptionPrompt(player.state, player)
+            prompt = OptionPrompt(
+                player.state.options, player.state.question, player.state.prompt, player
+            )
             result = prompt.action()
             console = get_console()
             console.print("[bold red]Press Q to move forward.", justify="center")
+
             while True:
                 if modules.quit_loop() == True:
                     break
+           
             match result:
                 case modules.change_state.CONTINUE:
                     player.state = games.path[games.path.index(player.state) + 1]
+
                 case modules.change_state.CHECKPOINT:
-                    slow_print("Moving Back to Last Checkpoint. You become more weary.\nPress q to start checkpoint.")
+                    slow_print(
+                        "Moving Back to Last Checkpoint. You become more weary.\nPress q to start checkpoint."
+                    )
                     while True:
                         if modules.quit_loop() == True:
                             break
                     player.weariness -= 10
                     player.state = player.checkpoint
+        
         case modules.Checkpoint():
+            slow_print("You are at checkpoint.\nPress q to exit the game, otherwise wait 3 seconds to continue.")
+            init_time = time.time()
+
+            while True:
+                if time.time() - init_time >= 3:
+                    break
+                if modules.quit_loop() == True:
+                    sys.exit()
+    
             player.checkpoint = player.state
-            CheckpointMessage(player.state)
+            CheckpointMessage(player.state.description)
             result = player.state.minigame()
+
             match result:
                 case modules.change_state.CONTINUE:
                     player.state = games.path[games.path.index(player.state) + 1]
                 case modules.change_state.CHECKPOINT:
                     player.state = player.checkpoint
+
         case modules.End():
             player.state.action()
-            os.system("rm save.p")
-            shutdownComputer()
+            os.system("rm direct.p")
+            os.sleep(2)
+            break
+            # shutdownComputer()
+        
         case modules.Start():
             player.state.action()
             player.state = games.path[games.path.index(player.state) + 1]
+
     if player.weariness <= 0:
-        wearinessTimeout()
+        wearinessTimeOut()
         break

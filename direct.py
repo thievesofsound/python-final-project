@@ -44,7 +44,7 @@ getting_on_train = modules.ListOfOptions(
         ),
     ],
     "Astana, Kazakhstan is a country located in Asia and is known for its modernistic and futuristic architecture.\nThough its beauty is undeniable, the state of living is struggling,\nas anti-government militias are on the rise in Kazakhstan and placing various cities under strict rule. \nAstana is one of them. To escape, you must hitch a train to the US in the morning to avoid forced labor.\n\n\n",
-    "It is 6:32 AM. Walking to a train station will take 2 hours on foot and the last train to the US before hell breaks loose is 9:00AM.\nPeople are scrambling to escape, but rush hour is at 7:30AM.\nYou can make time. What do you do?"
+    "It is 6:32 AM. Walking to a train station will take 2 hours on foot and the last train to the US before hell breaks loose is 9:00AM.\nPeople are scrambling to escape, but rush hour is at 7:30AM.\nYou can make time. What do you do?",
 )
 
 siberia = modules.ListOfOptions(
@@ -72,25 +72,26 @@ siberia = modules.ListOfOptions(
 )
 games = modules.Story(
     [
-        modules.Start(
-            lambda: OptionMessage("<<start game>>")
-        ),
+        modules.Start(lambda: OptionMessage("<<start game>>")),
         # beginning of Story I
         getting_on_train,
         siberia,
         modules.Checkpoint(
             "Placeholder",
             "This minigame will involve a randomly generated code to move on to the next path\nYou are given 3 tries. If you fail, the alarm will ‘sound’ and the game is over.",
-            puzzle_minigame,
+            puzzle_minigame
         ),
         modules.ListOfOptions(
             [
                 modules.Option(
-                    lambda: OptionMessage("R bozo", modules.change_state.CHECKPOINT), #TODO: Change these to actual data
+                    # TODO: Change these to actual data
+                    lambda: OptionMessage("Crossing the ice leaves you exposed to Russian drones.\nThey find you, and in a few minutes Russian soldiers are deployed on snowmobiles and capture you.\nYou are held in prison and progress on your journey to the US is heavily stalled", modules.change_state.CHECKPOINT),
                     "1. Attempt to cross the ice at night",
                 ),
                 modules.Option(
-                    lambda: OptionMessage("L Bozo", modules.change_state.CONTINUE), "2. Sneak onto a docked cargo ship" #TODO: change these to actual data
+                    # TODO: change these to actual data
+                    lambda: OptionMessage("You spot a cargo ship and sneak aboard; hiding below loads of refrigerated perishables. \nHours after the ship has sailed, you feel a bump. \nYou arrived! \nNow you must navigate across Alaska to reach your goal!", modules.change_state.CONTINUE),
+                    "2. Sneak onto a docked cargo ship",
                 ),
             ],
             "After the battle, you are left with no choice but to find a way to get to the U.S.",
@@ -103,10 +104,17 @@ games = modules.Story(
         modules.ListOfOptions(
             [
                 modules.Option(
-                    lambda: OptionMessage("On your hitchhiking journey, a trucker spots you and offers you a trip to Vancouver.\nYou are immensely grateful, but know that you need at least two more rides to reach the US Border.\n 2 hours later you arrive at the border.",modules.change_state.CONTINUE), "1. Hitchhike down through Canada and into the U.S."
+                    lambda: OptionMessage(
+                        "On your hitchhiking journey, a trucker spots you and offers you a trip to Vancouver.\nYou are immensely grateful, but know that you need at least two more rides to reach the US Border.\n 2 hours later you arrive at the border.",
+                        modules.change_state.CONTINUE,
+                    ),
+                    "1. Hitchhike down through Canada and into the U.S.",
                 ),
                 modules.Option(
-                    lambda: OptionMessage("You are somehow hired, and create excuses for the lack of an id and SSN card.\nYou work this job and don't make a lot of money, and on top of that, a rumor spreads around your workplace hinting at your immigration status.\nUnfortunately, immigration agents raid the vessel, and you are identified as an illegal immigrant. \nYou are now among the detention center with thousands of others who have been caught in the US.",modules.change_state.CHECKPOINT),
+                    lambda: OptionMessage(
+                        "You are somehow hired, and create excuses for the lack of an id and SSN card.\nYou work this job and don't make a lot of money, and on top of that, a rumor spreads around your workplace hinting at your immigration status.\nUnfortunately, immigration agents raid the vessel, and you are identified as an illegal immigrant. \nYou are now among the detention center with thousands of others who have been caught in the US.",
+                        modules.change_state.CHECKPOINT,
+                    ),
                     "2. Take a job on a fishing vessel to fund a bus trip south",
                 ),
             ],
@@ -122,7 +130,10 @@ games = modules.Story(
             lambda: immigration_gaurds(player),
         ),
         # End of story I
-        modules.End(lambda x: slow_print("You have finished! Good work getting this far."), "Placeholder")
+        modules.End(
+            lambda x: slow_print("You have finished! Good work getting this far."),
+            "Placeholder",
+        ),
     ]
 )
 
@@ -130,24 +141,25 @@ games = modules.Story(
 def exitGame(player):
     def func():
         dill.dump(player, open("direct.p", "wb"))
+        dill.dump(player.inventory, open("inventory.p", wb))
         print("Files have been saved, press q to fully exit.")
         while True:
             if modules.quit_loop() == True:
-                break
+                break 
 
     return func
 
 
-
-player = modules.import_game_state()
-player.play(games)
+player = modules.import_game_state(games)
 
 atexit.register(exitGame(player))
 
 while True:
     match player.state:
         case modules.ListOfOptions():
-            prompt = OptionPrompt(player.state.options, player.state.question, player.state.prompt, player)
+            prompt = OptionPrompt(
+                player.state.options, player.state.question, player.state.prompt, player
+            )
             result = prompt.action()
             console = get_console()
             console.print("[bold red]Press Q to move forward.", justify="center")
@@ -158,15 +170,25 @@ while True:
                 case modules.change_state.CONTINUE:
                     player.state = games.path[games.path.index(player.state) + 1]
                 case modules.change_state.CHECKPOINT:
-                    slow_print("Moving Back to Last Checkpoint.You become more weary.\nPress q to start checkpoint.")
+                    slow_print(
+                        "Moving Back to Last Checkpoint.You become more weary.\nPress q to start checkpoint."
+                    )
                     while True:
                         if modules.quit_loop() == True:
                             break
                     player.weariness -= 10
                     player.state = player.checkpoint
         case modules.Checkpoint():
+            slow_print("You are at checkpoint.\nPress q to exit the game, otherwise wait 3 seconds to continue.")
+            init_time = time.time()
+            while True:
+                if time.time() - init_time >= 3:
+                    break
+                if modules.quit_loop() == True:
+                    sys.exit()
+    
             player.checkpoint = player.state
-            CheckpointMessage(player.state)
+            CheckpointMessage(player.state.description)
             result = player.state.minigame()
             match result:
                 case modules.change_state.CONTINUE:
@@ -176,10 +198,11 @@ while True:
         case modules.End():
             player.state.action()
             os.system("rm direct.p")
-            shutdownComputer()
+            os.sleep(2)
+            # shutdownComputer()
         case modules.Start():
             player.state.action()
             player.state = games.path[games.path.index(player.state) + 1]
     if player.weariness <= 0:
-        wearinessTimeout()
+        wearinessTimeOut()
         break
